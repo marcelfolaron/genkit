@@ -166,6 +166,32 @@
       "default": "./lib/context.js"
     }
   },
+  "browser": {
+    "@opentelemetry/sdk-node": false,
+    "@opentelemetry/auto-instrumentations-node": false,
+    "@opentelemetry/winston-transport": false,
+    "@opentelemetry/exporter-jaeger": false,
+    "@opentelemetry/instrumentation-winston": false,
+    "@opentelemetry/instrumentation-pino": false,
+    "@opentelemetry/instrumentation-fs": false,
+    "@opentelemetry/instrumentation-http": false,
+    "@opentelemetry/instrumentation-https": false,
+    "@opentelemetry/instrumentation-net": false,
+    "@opentelemetry/instrumentation-dns": false,
+    "fs": false,
+    "net": false,
+    "tls": false,
+    "crypto": false,
+    "stream": false,
+    "url": false,
+    "zlib": false,
+    "http": false,
+    "https": false,
+    "assert": false,
+    "os": false,
+    "path": false,
+    "child_process": false
+  },
   "typesVersions": {
     "*": {
       "metrics": [

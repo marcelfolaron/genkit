@@ -49,6 +49,10 @@
     "yaml": "^2.7.0"
   },
   "types": "lib/index.d.ts",
+  "browser": {
+    "handlebars": "handlebars/dist/cjs/handlebars",
+    "handlebars/runtime": "handlebars/dist/cjs/handlebars.runtime"
+  },
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",
