@@ -26,11 +26,10 @@ import { type ExportResult } from '@opentelemetry/core';
 import type { Instrumentation } from '@opentelemetry/instrumentation';
 import { PinoInstrumentation } from '@opentelemetry/instrumentation-pino';
 import { WinstonInstrumentation } from '@opentelemetry/instrumentation-winston';
-import { Resource } from '@opentelemetry/resources';
+import { createResource, createResourceFromDetector, type CompatResource } from './otel-compat.js';
 import {
   AggregationTemporality,
-  DefaultAggregation,
-  ExponentialHistogramAggregation,
+  AggregationType,
   InMemoryMetricExporter,
   InstrumentType,
   PeriodicExportingMetricReader,
@@ -69,13 +68,23 @@ let spanExporter: AdjustingTraceExporter;
  */
 export class GcpOpenTelemetry {
   private readonly config: GcpTelemetryConfig;
-  private readonly resource: Resource;
+  private readonly resource: CompatResource;
 
   constructor(config: GcpTelemetryConfig) {
     this.config = config;
-    this.resource = new Resource({ type: 'global' }).merge(
-      new GcpDetectorSync().detect()
-    );
+    // In OTel 2.0, detectors are unified but GcpDetectorSync may not work correctly
+    // due to the Resource constructor removal. Fall back gracefully.
+    let gcpDetectedResource;
+    try {
+      gcpDetectedResource = createResourceFromDetector(new GcpDetectorSync().detect());
+    } catch (error) {
+      // GcpDetectorSync fails in OTel 2.0 because it expects the old Resource constructor
+      // Fall back to empty resource - this maintains functionality but without GCP metadata
+      console.warn('GCP resource detection failed, falling back to basic resource:', error);
+      gcpDetectedResource = createResource({});
+    }
+    
+    this.resource = createResource({ type: 'global' }).merge(gcpDetectedResource);
   }
 
   /**
@@ -105,7 +114,7 @@ export class GcpOpenTelemetry {
   async getConfig(): Promise<Partial<NodeSDKConfiguration>> {
     spanProcessor = new BatchSpanProcessor(await this.createSpanExporter());
     return {
-      resource: this.resource,
+      resource: this.resource.getNativeResource(),
       spanProcessor: spanProcessor,
       sampler: this.config.sampler,
       instrumentations: this.getInstrumentations(),
@@ -238,10 +247,12 @@ class MetricExporterWrapper extends MetricExporter {
   }
 
   selectAggregation(instrumentType: InstrumentType) {
+    // In OTel 2.0, aggregation selection is handled differently
+    // Return aggregation type configurations instead of instances
     if (instrumentType === InstrumentType.HISTOGRAM) {
-      return new ExponentialHistogramAggregation();
+      return { type: AggregationType.EXPONENTIAL_HISTOGRAM };
     }
-    return new DefaultAggregation();
+    return { type: AggregationType.DEFAULT };
   }
 
   selectAggregationTemporality(instrumentType: InstrumentType) {
