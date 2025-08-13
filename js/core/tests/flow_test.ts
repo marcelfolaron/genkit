@@ -27,8 +27,9 @@ import { TestSpanExporter } from './utils.js';
 initNodeFeatures();
 
 const spanExporter = new TestSpanExporter();
+const spanProcessor = new SimpleSpanProcessor(spanExporter);
 enableTelemetry({
-  spanProcessors: [new SimpleSpanProcessor(spanExporter)],
+  spanProcessors: [spanProcessor],
 });
 
 function createTestFlow(registry: Registry) {
@@ -48,9 +49,13 @@ function createTestFlow(registry: Registry) {
 describe('flow', () => {
   let registry: Registry;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Skips starting reflection server.
     delete process.env.GENKIT_ENV;
+    
+    // Clear spans and flush processor before each test
+    spanExporter.exportedSpans = [];
+    await spanProcessor.forceFlush();
     registry = new Registry();
   });
 
@@ -359,8 +364,10 @@ describe('flow', () => {
   });
 
   describe('telemetry', async () => {
-    beforeEach(() => {
+    beforeEach(async () => {
+      // Additional clear and flush for telemetry tests
       spanExporter.exportedSpans = [];
+      await spanProcessor.forceFlush();
     });
 
     it('should create a trace', async () => {
@@ -371,6 +378,10 @@ describe('flow', () => {
       });
 
       assert.equal(result, 'bar foo');
+      
+      // Force flush the span processor
+      await spanProcessor.forceFlush();
+      
       assert.strictEqual(spanExporter.exportedSpans.length, 1);
       assert.strictEqual(spanExporter.exportedSpans[0].displayName, 'testFlow');
       assert.deepStrictEqual(spanExporter.exportedSpans[0].attributes, {
@@ -395,6 +406,10 @@ describe('flow', () => {
       const result = await output;
 
       assert.equal(result, 'bar foo');
+      
+      // Force flush the span processor
+      await spanProcessor.forceFlush();
+      
       assert.strictEqual(spanExporter.exportedSpans.length, 1);
       assert.strictEqual(spanExporter.exportedSpans[0].displayName, 'testFlow');
       assert.deepStrictEqual(spanExporter.exportedSpans[0].attributes, {
@@ -446,6 +461,10 @@ describe('flow', () => {
       });
 
       assert.equal(result, 'foo bar');
+      
+      // Force flush the span processor
+      await spanProcessor.forceFlush();
+      
       assert.strictEqual(spanExporter.exportedSpans.length, 3);
 
       assert.strictEqual(
