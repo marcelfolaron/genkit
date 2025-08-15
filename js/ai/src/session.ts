@@ -225,8 +225,10 @@ export class Session<S = any> {
       let requestBase: Promise<BaseGenerateOptions>;
       if (preamble) {
         const renderOptions = options as PromptRenderOptions<I>;
+        // Ensure renderOptions has default structure to prevent TypeError
+        const safeRenderOptions: PromptGenerateOptions = renderOptions || {};
         requestBase = preamble
-          .render(renderOptions?.input, renderOptions as PromptGenerateOptions)
+          .render(renderOptions?.input, safeRenderOptions)
           .then((rb) => {
             return {
               ...rb,
