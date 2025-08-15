@@ -190,6 +190,23 @@ describe('chat', () => {
       'Echo: hi Genkit; config: {"version":"abc","temperature":11}'
     );
   });
+
+  it('can start chat from a prompt file without input (issue #2770)', async () => {
+    const helloAgent = ai.prompt('helloAgent');
+    const chat = ai.createSession().chat(helloAgent);
+
+    // Should not throw "TypeError: Cannot read properties of undefined (reading 'input')"
+    // This is a regression test to ensure the issue doesn't happen again
+    const { text } = await chat.send('hello!');
+
+    // The prompt file content should be processed (though it includes frontmatter due to parsing)
+    // The key is that no TypeError should be thrown
+    assert.ok(
+      text.includes('hello!'),
+      'Response should include the user message'
+    );
+    assert.ok(text.includes('Echo:'), 'Response should be from the echo model');
+  });
 });
 
 describe('preamble', () => {

@@ -1,0 +1,6 @@
+---
+input:
+  schema:
+    name?: string
+system: You are a helpful assistant{{#if name}} named {{name}}{{/if}}.
+---
